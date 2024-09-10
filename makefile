@@ -1,18 +1,23 @@
+# PATHS $
 build_dir = build
-build_codegen = $(build_dir)/code_generation
-codegen_dir = src/code_generation
+src_dir = src
 
-$(build_codegen)/generator.o: $(codegen_dir)/generator.cpp | $(build_codegen)
-	g++ -std=c++17 -c $(codegen_dir)/generator.cpp -I $(codegen_dir) -o $(build_codegen)/generator.o
+# Build arguments #
+INCLUDES = -I $(src_dir)
+GPPARGS = -std=c++17 -Wall
 
-$(build_codegen)/arg_parser.o: $(codegen_dir)/arg_parser.cpp | $(build_codegen)
-	g++ -std=c++17 -c $(codegen_dir)/arg_parser.cpp -I $(codegen_dir) -o $(build_codegen)/arg_parser.o
+CODEGENFILES = code_generation/generator.cpp arg_parser/arg_parser.cpp parallel_regex/pregex.cpp
 
-code_generator: $(build_codegen)/generator.o $(build_codegen)/arg_parser.o
-	g++ -std=c++17 $(build_codegen)/generator.o $(build_codegen)/arg_parser.o -o $(build_dir)/code_generator 
+# Intermediaries #
+CODEGEN = $(addprefix $(build_dir)/, $(CODEGENFILES:.cpp=.o))
 
-$(build_codegen):
-	mkdir $@
+# Build Objects #
+$(build_dir)/%.o : $(src_dir)/%.cpp
+	mkdir -p $(@D)
+	g++ $(GPPARGS) $(INCLUDES) -c $< -o $@
+
+code_generator: $(CODEGEN)
+	g++ $(GPPARGS) $(CODEGEN) -o $(build_dir)/code_generator 
 
 clean: 
 	 rm -rf $(build_dir)/* 

@@ -1,10 +1,11 @@
 #include <iostream>
-#include <arg_parser.h>
+#include "arg_parser/arg_parser.h"
+#include "parallel_regex/pregex.h"
 
 int main(int argc, char* argv[]) {
     ArgumentParser argparser;
 
-    argparser.add_arg("input path", "--i");
+    argparser.add_arg("input string", "--s");
 
     std::unordered_map<std::string, std::string> parsed_args;
 
@@ -13,7 +14,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::cout << parsed_args["input path"] << "\n";
+    std::cout << parsed_args["input string"] << "\n";
+
+    PregexSequence thing{"(AB)?C", "hey!"};
 
     return 0;
 }

@@ -4,6 +4,12 @@ arguments -> build type ( parser / lexer ), input specification ( path )
 (technically two seperate things but I'll use this to reuse the input logic for it)
 
 
+### LEXER ###
+
+Create a number of parallel regex sequences, these contain a sequence of nodes.
+
+
+
 ### MATH PARSER
 
 Tokens:
