@@ -16,7 +16,22 @@ int main(int argc, char* argv[]) {
 
     std::cout << parsed_args["input string"] << "\n";
 
-    PregexSequence thing{"(AB)?C", "hey!"};
+    PregexSequence parse_steve("steve", "s");
+    PregexSequence parse_garry("garry", "g");
+    PregexSequence parse_jim("jim", "j");
+    PregexSequence parse_alex("alex", "a");
+
+    for (auto c : parsed_args["input string"] ){ // If one matches, reset the rest. ALLOW parallel explorations
+        if (parse_steve.match(c)) std::cout << parse_steve.get_token() << " ";
+        if (parse_garry.match(c)) std::cout << parse_garry.get_token() << " ";
+        if (parse_jim.match(c)) std::cout << parse_jim.get_token() << " ";
+        if (parse_alex.match(c)) std::cout << parse_alex.get_token() << " ";
+    }
+
+    // PregexSequence parse_number("[0-9]+(.[0-9]+)?", "number");
+    // PregexSequence parse_eol("\n", "eol");
+    // PregexSequence parse_tab("\t", "tab");
+    // PregexSequence parse_space(" ", "tab");
 
     return 0;
 }

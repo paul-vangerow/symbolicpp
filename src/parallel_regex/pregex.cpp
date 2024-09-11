@@ -1,82 +1,81 @@
 #include "pregex.h"
 
-PregexSequence::PregexSequence(std::string match_string, std::string token) : m_token(token), m_error(false) {
+PregexSequence::PregexSequence(std::string match_string, std::string token) : m_token(token), m_error(false), m_ptr(0) {
     // Build a sequence by first creating all nodes and modifiers
     build_sequence(match_string);
 
     // And then processing the modifiers on the nodes.
     for (auto & mod : m_modifiers) mod->apply(m_sequence);
 
-    print_nodes();
+    // print_nodes();
+}
+
+bool PregexSequence::match(char c){ // Need to implement exploration of multiple paths
+    auto & current_node = m_sequence.at(m_ptr);
+    auto it = current_node->m_transitions.find(c);
+    if (it != current_node->m_transitions.end()){
+        m_ptr = it->second.front();
+        return m_sequence.at(m_ptr)->m_is_end;
+    } else m_ptr = 0;
+    return false;
 }
 
 void PregexSequence::build_sequence(std::string match_string) {
     int current_node = 0;
-    std::stack<int> context_stack;
+
     int context_start = 0;
-    bool check_matches = false;
+    std::stack<int> context_stack;
+
+    bool escape = false;
 
     for (int i = 0; i < match_string.size(); i++){
-        char current_char = match_string.at(i);
-        switch(current_char) {
-            case '(': { // Create a context.
-                context_stack.push(current_node);
-                break;
-            }
-            case '/': { // Escape the next Modifier.
-                std::cout << "VAL \n";
-                current_char = match_string.at(++i);
-            }
-            default: { // Build a set or normal node
-                auto new_node = std::unique_ptr<PregexNode>(new PregexNode{ .m_node_number=current_node++});
-                if (current_char == '[') { // Build a set
-                    for (int offset = i+4; i < match_string.size(); offset+=3){
-                        if (match_string.at(offset-2) != '-') {
-                            m_error = true;
-                            return;
-                        }
-                        add_set( match_string.at(offset-3), match_string.at(offset-1), new_node );
-                        if (match_string.at(offset) == ']') {
-                            i = offset;
-                            break;
-                        } 
+        char current_char = match_string[i];
+        char c = match_string[i];
+
+        if (c == '('){ // Create a context.
+            context_stack.push(current_node);
+        } else 
+        if (c == '/'){ // Escape the next Modifier.
+            escape = true;
+            continue;
+        } else
+        if (c == ')'){ // Close a context
+            context_start = context_stack.top();
+            context_stack.pop();
+            continue;
+        } else
+        if (c == '?' && !escape){ // Apply a ? modifier
+            auto modifier = new PregexModifier{.optional=true, .begin=context_start, .end=current_node};
+            m_modifiers.push_back( std::unique_ptr<PregexModifier>(modifier) );
+        } else
+        if (c == '+' && !escape){ // Apply a + modifier
+            auto modifier = new PregexModifier{.recursive=true, .begin=context_start, .end=current_node};
+            m_modifiers.push_back( std::unique_ptr<PregexModifier>(modifier) );
+        } else
+        if (c == '*' && !escape){ // Apply a * modifier
+            auto modifier = new PregexModifier{.optional=true, .recursive=true, .begin=context_start, .end=current_node};
+            m_modifiers.push_back( std::unique_ptr<PregexModifier>(modifier) );
+        } else { // Build a new node
+            auto new_node = std::unique_ptr<PregexNode>(new PregexNode{ .m_node_number=current_node++});
+            if (current_char == '[') { // Build a set
+                for (int offset = i+4; i < match_string.size(); offset+=3){
+                    if (match_string.at(offset-2) != '-') {
+                        m_error = true;
+                        return;
                     }
-                } else { // Construct a normal node.
-                    add_set(current_char, current_char, new_node);
+                    add_set( match_string.at(offset-3), match_string.at(offset-1), new_node );
+                    if (match_string.at(offset) == ']') {
+                        i = offset;
+                        break;
+                    } 
                 }
-                m_sequence.push_back( std::move(new_node) );
-                break;
+            } else { // Construct a normal node.
+                add_set(current_char, current_char, new_node);
             }
-            case ')': { // Close a context.
-                current_char = match_string.at(++i);
-                context_start = context_stack.top();
-                context_stack.pop();
-                check_matches = true;
-            }
-            case '+': { // Add a modifier to the current context with 'Recursion' property
-                if ( !check_matches || (check_matches && current_char == '+')) {
-                    auto modifier = new PregexModifier{.recursive=true, .begin=context_start, .end=current_node};
-                    m_modifiers.push_back( std::unique_ptr<PregexModifier>(modifier) );
-                    break;
-                }
-            }
-            case '?': { // Add a modifier to the current context with 'Optional' property
-                if ( !check_matches || (check_matches && current_char == '?')) {
-                    auto modifier = new PregexModifier{.optional=true, .begin=context_start, .end=current_node};
-                    m_modifiers.push_back( std::unique_ptr<PregexModifier>(modifier) );
-                    break;
-                }
-            }
-            case '*': { // Add a modifier to the current context with 'Optional' and 'Recursion' properties.
-                if ( !check_matches || (check_matches && current_char == '*')) {
-                    auto modifier = new PregexModifier{.recursive=true, .optional=true, .begin=context_start, .end=current_node};
-                    m_modifiers.push_back( std::unique_ptr<PregexModifier>(modifier) );
-                    break;
-                }
-            }
+            m_sequence.push_back( std::move(new_node) );
         }
-        check_matches = false;
         context_start=current_node-1;
+        escape = false;
     }
     auto new_node = std::unique_ptr<PregexNode>(new PregexNode{ .m_node_number=current_node, .m_is_end=true});
     m_sequence.push_back( std::move(new_node) );

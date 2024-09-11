@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <vector>
 #include <stack>
+#include <chrono>
 
 struct PregexNode {
     std::unordered_map<char, std::vector<int>> m_transitions;
@@ -42,9 +43,11 @@ struct PregexModifier {
 class PregexSequence {
 private:
     std::string m_token;
-    bool m_error;
+    bool m_error; // Maybe remove? Not going to do thorough error checking I think.
     std::vector<std::unique_ptr<PregexNode>> m_sequence;
     std::vector<std::unique_ptr<PregexModifier>> m_modifiers;
+
+    int m_ptr;
 public:
     PregexSequence(std::string match_string, std::string token);
 
@@ -54,6 +57,12 @@ public:
         int next_node = node->m_node_number+1;
         for (char v = begin; v <= end; v++) *node += std::make_pair(v, next_node);
     }
+
+    std::string get_token() {
+        return m_token;
+    }
+
+    bool match(char c);
 
     void print_nodes(){
         for (auto & node : m_sequence){
