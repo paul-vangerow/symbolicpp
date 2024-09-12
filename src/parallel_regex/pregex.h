@@ -64,6 +64,10 @@ public:
 
     bool match(char c);
 
+    void reset(){
+        m_ptr = 0;
+    }
+
     void print_nodes(){
         for (auto & node : m_sequence){
             std::cout << "NODE: " << node->m_node_number << " | ";
@@ -73,6 +77,19 @@ public:
             std::cout << "END: " << node->m_is_end << "\n";
         }
     }
+};
+
+class ParallelRegex {
+private:
+    std::vector<std::unique_ptr<PregexSequence>> m_expressions;
+public:
+    ParallelRegex() = default;
+
+    void add_expression(std::string match_string, std::string match_token){
+        expressions.push_back( std::make_unique<PregexSequence>(new PregexSequence(match_string, match_token)) );
+    }
+
+    std::optional<std::string> match_character(char c);
 };
 
 #endif

@@ -6,8 +6,6 @@ PregexSequence::PregexSequence(std::string match_string, std::string token) : m_
 
     // And then processing the modifiers on the nodes.
     for (auto & mod : m_modifiers) mod->apply(m_sequence);
-
-    // print_nodes();
 }
 
 bool PregexSequence::match(char c){ // Need to implement exploration of multiple paths
@@ -79,4 +77,21 @@ void PregexSequence::build_sequence(std::string match_string) {
     }
     auto new_node = std::unique_ptr<PregexNode>(new PregexNode{ .m_node_number=current_node, .m_is_end=true});
     m_sequence.push_back( std::move(new_node) );
+}
+
+std::optional<std::string> ParallelRegex::match_character(char c){
+    // Requirements for Parallel parsing //
+    // 1) Expressions are in priority order. It should try to match the longest string in priority.
+    // 2) Expressions should be able to become valid multiple times and hold their previous values,
+    //    this is important for match items that have optionals. It should always match the longest
+    //    expression possible, but should default back in case the expression is reset.
+    // 3) Expressions are reset if all their branches conclude. Branch exploration should be able to
+    //    occur simultaneously and should be reset independently. If all branches are at the same 
+    //    point they should be merged back together. <-- this may result in more problems if I'm
+    //    not careful.
+
+
+    for (auto & expr : m_expressions){
+
+    }
 }
