@@ -2,8 +2,6 @@
 #include "arg_parser/arg_parser.h"
 #include "parallel_regex/pregex.h"
 
-// Make this generate lexer code based on a .yaml specification (create own YAML parser) //
-
 int main(int argc, char* argv[]) {
     ArgumentParser argparser;
 
@@ -18,15 +16,17 @@ int main(int argc, char* argv[]) {
 
     std::cout << parsed_args["input string"] << "\n";
 
-    ParallelRegex tokeniser;
-    tokeniser.add_expression("steve", "s");
-    tokeniser.add_expression("garry", "g");
-    tokeniser.add_expression("jim", "j");
-    tokeniser.add_expression("alex", "a");
+    Pregex lexer;
+    lexer.add_char_sequence("[0-9]+(.[0-9]+)?", "NUM"); // Doesn't match the dot (Likely a context issue) <-- Context applying modifiers weird
+    // lexer.add_char_sequence("\\+", "ADD"); // Reset behaviour off
+    // lexer.add_char_sequence("=", "EQ");
 
-    for (auto c : parsed_args["input string"] ){
-        if ( auto v = tokeniser.match_character(c) ) std::cout << v.value() << std::endl;
-    }
+    // for (auto c : (parsed_args["input string"]+" ")){
+    //     auto match_obj = lexer.match_token(c);
+    //     // if (match_obj.token_sequence.size()!=0)
+    //     //     std::cout << match_obj.out_token << " ";
+    // }
+    // std::cout << "\n";
 
     return 0;
 }
