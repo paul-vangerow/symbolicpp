@@ -26,13 +26,10 @@ PregexSequence::PregexSequence(
             m_sequence.at(mod.context_end) += m_sequence.at(mod.context_start);
         }
     }
-    m_ptrs.push_back(MatchPtr{});
+    init_ptrs();
 }
 
-
-
-
-// Char exclusive //
+// ---*--- Only when IN_T is a char does this apply. ---*--- //
 
 void PregexSequence::build_character_set(char begin, char end, std::unordered_set<char> & set ){
     for (char i = begin; i <= end; i++) set.insert(i);
@@ -106,7 +103,6 @@ std::pair<std::vector<PregexModifier>, std::vector<std::unordered_set<char>>> Pr
             } break;
         }
     }
-
     return std::make_pair( modifiers, characters );
 }
 
@@ -117,74 +113,61 @@ void Pregex::add_char_sequence(std::string match_string, std::string out_token){
     m_sequences.push_back(sequence);
 }
 
+// ---*---- Char only section over ---*--- //
 
+MatchObject PregexSequence::match_input(IN_T token){
+    MatchObject output;
+    std::queue<MatchPtr> new_ptrs;
 
+    while (m_ptrs.size()){
+        auto front_element = m_ptrs.front();
+        m_ptrs.pop();
 
+        auto front_node = m_sequence.at(front_element.location);
+        auto front_transitions = front_node.m_transitions;
+        auto front_find_token = front_transitions.find(token);
 
-// MatchObject PregexSequence::match_input(IN_T token){
-//     std::vector<MatchPtr> new_ptrs = { MatchPtr{} };
-//     MatchObject out_obj{.out_token=m_out_token};
-//     MatchPtr prev_matched;
+        // This node is dead end. Process possible matches. SHOULD ONLY GET ONE!
+        if (front_find_token == front_transitions.end()) {
+            // This is a finalising match
+            if (front_node.m_is_end) {
+                output.token_sequence = front_element.full_match_tokens;
+                output.out_token = m_out_token;
 
-//     for (auto ptr : m_ptrs){ // Iterate through all pointers
-//         auto sequence_node = m_sequence.at(ptr.location); // Get the ptr location
-//         auto ptr_transitions = sequence_node.m_transitions; // Get the pointer node transitions
-//         auto find_it = ptr_transitions.find(token); // See if the match token is in the transitions
-//         if (find_it == ptr_transitions.end()){ // We didn't find it, move on.
-//             if (ptr.full_match_tokens.size() > prev_matched.full_match_tokens.size()) prev_matched = ptr;
-//             continue; 
-//         }
-//         for (auto connection : find_it->second ){ // Go through all possible new transitions.
-//             MatchPtr next_ptr{
-//                 .tokens = ptr.tokens,
-//                 .location = connection
-//             }; // Valid transition, so make a new pointer
+                new_ptrs.push( MatchPtr{} );
+                break;
+            }
 
-//             next_ptr.tokens.push_back(token); // Add the most recent token to the tokens list.
-//             if ( m_sequence.at(connection).m_is_end ){
-//                 next_ptr.full_match_tokens = next_ptr.tokens;
-//                 out_obj.matched = true; // Used to indicate to KILL ALL NON-END NODES
-//             } else {
-//                 next_ptr.full_match_tokens = ptr.full_match_tokens;
-//             }
+            // Create a new start pointer
+            continue;
+        }
+        // Add the new token
+        front_element.tokens.push_back(token);
 
-//             new_ptrs.push_back(next_ptr); // Add to the new pointer list
-//         }
-//     }
-//     if (out_obj.matched){
-//         std::vector<MatchPtr> new_new_ptrs = { MatchPtr{} };
-//         for (auto ptr : new_ptrs){
-//             if (m_sequence.at(ptr.location).m_is_end){
-//                 new_new_ptrs.push_back(ptr);
-//             }
-//         }
-//         new_ptrs = new_new_ptrs;
-//     }
-//     std::cout << "OUT_OBJ: " << out_obj.out_token << std::endl;
+        // We have found a match, go through all possible links:
+        for (auto link : front_find_token->second){
+            auto link_node_end = m_sequence.at(link).m_is_end;
 
-//     if (new_ptrs.size() < 2) out_obj.token_sequence = prev_matched.full_match_tokens; // This bit doesnt work
+            // Make note if there is a match on the transition node.
+            output.matched |= link_node_end;
 
-//     m_ptrs = new_ptrs;
+            // Create the new linked node
+            MatchPtr new_link_ptr = front_element;
+            new_link_ptr.location = link;
 
-//     for (auto item : out_obj.token_sequence) {
-//         std::cout << item;
-//     }
-//     std::cout << "\n " << out_obj.matched << "\n";
+            if (link_node_end) new_link_ptr.full_match_tokens = new_link_ptr.tokens;
 
-//     return out_obj;
-// }
+            new_ptrs.push(new_link_ptr);
+        }
+    }
+    m_ptrs = new_ptrs;
 
-// MatchObject Pregex::match_token(IN_T in){
-//     MatchObject out;
-//     for (std::size_t i = 0; i < m_sequences.size(); ++i){
-//         // Investigate why this happens?
-//         auto output = m_sequences[i].match_input(in);
-//         if (output.matched) {
-//             reset_excl(i);
-//             break;
-//         }
-//         if (output.token_sequence.size() != 0) out = output;
-//     }
-//     return out;
-//     // If we get a match, reset and repeat other pregexes.
-// }
+    return output;
+}
+
+MatchObject Pregex::match_token(IN_T in){
+    MatchObject out;
+    auto out_obj = m_sequences.at(0).match_input(in);
+    std::cout << out_obj;
+    return MatchObject{};
+}

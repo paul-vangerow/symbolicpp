@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_set>
 #include <stack>
+#include <queue>
 
 typedef char IN_T;
 typedef std::string OUT_T;
@@ -55,9 +56,18 @@ public:
 
 struct MatchObject {
     std::vector<IN_T> token_sequence;
-    OUT_T out_token;
+    OUT_T out_token = "";
     bool matched=false;
 };
+
+static void operator<<(std::ostream & stream, MatchObject & rhs){
+    stream << "--- Match Object --- \n";
+    stream << "Sequence: ";
+    for (auto item : rhs.token_sequence) stream << item;
+    stream << "\n";
+    stream << "Out Token: " << rhs.out_token << "\n";
+    stream << "Matched: " << (rhs.matched?"Yes":"No") << "\n";
+}
 
 struct MatchPtr {
     std::size_t location = 0;
@@ -69,7 +79,7 @@ class PregexSequence {
 private:
     std::vector<PregexNode> m_sequence;
     OUT_T m_out_token;
-    std::vector<MatchPtr> m_ptrs;
+    std::queue<MatchPtr> m_ptrs;
 public:
     PregexSequence(
         std::vector<std::unordered_set<IN_T>> const & internal_transitions, // All the transitions with which to construct nodes
@@ -91,8 +101,8 @@ public:
 
     MatchObject match_input(IN_T token);
 
-    void reset_ptrs(){
-        m_ptrs={ MatchPtr{} };
+    void init_ptrs(){
+        m_ptrs.push(MatchPtr{});
     }
 
     // Generate the required components needed for initialising PregexSequence off a classic Regex Input String
@@ -109,13 +119,6 @@ public:
     MatchObject match_token(IN_T in);
 
     void add_char_sequence(std::string match_string, std::string out_token);
-    void reset_excl(std::size_t skip){
-        for (std::size_t i = 0; i < m_sequences.size(); ++i){
-            if (i == skip) continue;
-            m_sequences[i].reset_ptrs();
-        }
-        // SHould work <-- investigate
-    }
 };
 
 #endif
