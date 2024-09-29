@@ -118,6 +118,7 @@ void Pregex::add_char_sequence(std::string match_string, std::string out_token){
 MatchObject PregexSequence::match_input(IN_T token){
     MatchObject output;
     std::queue<MatchPtr> new_ptrs;
+    std::queue<MatchPtr> end_ptrs;
 
     while (m_ptrs.size()){
         auto front_element = m_ptrs.front();
@@ -134,11 +135,9 @@ MatchObject PregexSequence::match_input(IN_T token){
                 output.token_sequence = front_element.full_match_tokens;
                 output.out_token = m_out_token;
 
-                new_ptrs.push( MatchPtr{} );
-                break;
+                // Replace if we got an output
+                m_ptrs.push( MatchPtr{} );
             }
-
-            // Create a new start pointer
             continue;
         }
         // Add the new token
@@ -156,11 +155,12 @@ MatchObject PregexSequence::match_input(IN_T token){
             new_link_ptr.location = link;
 
             if (link_node_end) new_link_ptr.full_match_tokens = new_link_ptr.tokens;
-
-            new_ptrs.push(new_link_ptr);
+            if (output.matched) end_ptrs.push(new_link_ptr);
+            else new_ptrs.push(new_link_ptr);
         }
     }
-    m_ptrs = new_ptrs;
+    if (output.matched) m_ptrs = end_ptrs;
+    else m_ptrs = new_ptrs;
 
     return output;
 }

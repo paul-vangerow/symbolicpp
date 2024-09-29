@@ -61,12 +61,11 @@ struct MatchObject {
 };
 
 static void operator<<(std::ostream & stream, MatchObject & rhs){
-    stream << "--- Match Object --- \n";
     stream << "Sequence: ";
     for (auto item : rhs.token_sequence) stream << item;
     stream << "\n";
     stream << "Out Token: " << rhs.out_token << "\n";
-    stream << "Matched: " << (rhs.matched?"Yes":"No") << "\n";
+    stream << "Matched: " << (rhs.matched?"Yes":"No") << "\n\n";
 }
 
 struct MatchPtr {

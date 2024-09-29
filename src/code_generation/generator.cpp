@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     std::cout << parsed_args["input string"] << "\n";
 
     Pregex lexer;
-    lexer.add_char_sequence("ABC(ABD)?", "CC"); // Doesn't match the dot (Likely a context issue) <-- Context applying modifiers weird
+    lexer.add_char_sequence("ABC(ABCABD)?", "CC"); // Doesn't match the dot (Likely a context issue) <-- Context applying modifiers weird
     // lexer.add_char_sequence("\\+", "ADD"); // Reset behaviour off
     // lexer.add_char_sequence("=", "EQ");
 
