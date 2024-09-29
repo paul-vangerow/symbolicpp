@@ -26,7 +26,6 @@ PregexSequence::PregexSequence(
             m_sequence.at(mod.context_end) += m_sequence.at(mod.context_start);
         }
     }
-    init_ptrs();
 }
 
 // ---*--- Only when IN_T is a char does this apply. ---*--- //
@@ -118,7 +117,8 @@ void Pregex::add_char_sequence(std::string match_string, std::string out_token){
 MatchObject PregexSequence::match_input(IN_T token){
     MatchObject output;
     std::queue<MatchPtr> new_ptrs;
-    std::queue<MatchPtr> end_ptrs;
+
+    if (!m_ptrs.size()) init_ptrs();
 
     while (m_ptrs.size()){
         auto front_element = m_ptrs.front();
@@ -128,18 +128,19 @@ MatchObject PregexSequence::match_input(IN_T token){
         auto front_transitions = front_node.m_transitions;
         auto front_find_token = front_transitions.find(token);
 
-        // This node is dead end. Process possible matches. SHOULD ONLY GET ONE!
-        if (front_find_token == front_transitions.end()) {
-            // This is a finalising match
-            if (front_node.m_is_end) {
+        // bool is_end = front_node.m_is_end;
+        bool token_not_found = front_find_token == front_transitions.end();
+
+        if (token_not_found) {
+            // We have reached an end without futher matches. This is a completion candidate.
+            if (front_element.full_match_tokens.size()) {
                 output.token_sequence = front_element.full_match_tokens;
                 output.out_token = m_out_token;
-
-                // Replace if we got an output
                 m_ptrs.push( MatchPtr{} );
             }
             continue;
         }
+    
         // Add the new token
         front_element.tokens.push_back(token);
 
@@ -155,19 +156,34 @@ MatchObject PregexSequence::match_input(IN_T token){
             new_link_ptr.location = link;
 
             if (link_node_end) new_link_ptr.full_match_tokens = new_link_ptr.tokens;
-            if (output.matched) end_ptrs.push(new_link_ptr);
-            else new_ptrs.push(new_link_ptr);
+            
+            new_ptrs.push(new_link_ptr);
         }
     }
-    if (output.matched) m_ptrs = end_ptrs;
-    else m_ptrs = new_ptrs;
+    m_ptrs = new_ptrs;
 
     return output;
 }
 
+void Pregex::reset_queues(IN_T in, std::size_t seq_idx){
+    for (std::size_t sequence_it = 0; sequence_it < m_sequences.size(); sequence_it++){
+        if (sequence_it == seq_idx) continue;
+
+        m_sequences.at(sequence_it).reset_ptrs();
+        auto tmp = m_sequences.at(sequence_it).match_input(in);
+    }
+}
+
 MatchObject Pregex::match_token(IN_T in){
     MatchObject out;
-    auto out_obj = m_sequences.at(0).match_input(in);
-    std::cout << out_obj;
-    return MatchObject{};
+    for (auto it = 0; it < m_sequences.size(); it++){
+        auto out_obj = m_sequences.at(it).match_input(in);
+        if (out_obj.token_sequence.size()) out = out_obj;
+        // if (out_obj.matched) {
+        //     reset_queues(in, it);
+        //     break;
+        // }
+    }
+
+    return out;
 }

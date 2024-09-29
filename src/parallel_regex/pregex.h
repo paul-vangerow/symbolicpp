@@ -61,11 +61,10 @@ struct MatchObject {
 };
 
 static void operator<<(std::ostream & stream, MatchObject & rhs){
-    stream << "Sequence: ";
-    for (auto item : rhs.token_sequence) stream << item;
-    stream << "\n";
-    stream << "Out Token: " << rhs.out_token << "\n";
-    stream << "Matched: " << (rhs.matched?"Yes":"No") << "\n\n";
+    if (rhs.token_sequence.size()){
+        for (auto item : rhs.token_sequence) stream << item;
+        stream << " (" << rhs.out_token << ") ";
+    }
 }
 
 struct MatchPtr {
@@ -104,6 +103,11 @@ public:
         m_ptrs.push(MatchPtr{});
     }
 
+    void reset_ptrs(){
+        std::queue<MatchPtr> new_ptrs;
+        m_ptrs = new_ptrs;
+    }
+
     // Generate the required components needed for initialising PregexSequence off a classic Regex Input String
     static std::pair<std::vector<PregexModifier>, std::vector<std::unordered_set<char>>> parse_input_text(std::string text);
     static void build_character_set(char begin, char end, std::unordered_set<char> & set );
@@ -116,6 +120,7 @@ public:
     Pregex() = default;
 
     MatchObject match_token(IN_T in);
+    void reset_queues(IN_T in, std::size_t seq_idx);
 
     void add_char_sequence(std::string match_string, std::string out_token);
 };
