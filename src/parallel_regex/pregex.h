@@ -57,7 +57,7 @@ public:
 struct MatchObject {
     std::vector<IN_T> token_sequence;
     OUT_T out_token = "";
-    bool matched=false;
+    bool matched = false;
 };
 
 static void operator<<(std::ostream & stream, MatchObject & rhs){

@@ -165,24 +165,19 @@ MatchObject PregexSequence::match_input(IN_T token){
     return output;
 }
 
-void Pregex::reset_queues(IN_T in, std::size_t seq_idx){
-    for (std::size_t sequence_it = 0; sequence_it < m_sequences.size(); sequence_it++){
-        if (sequence_it == seq_idx) continue;
-
-        m_sequences.at(sequence_it).reset_ptrs();
-        auto tmp = m_sequences.at(sequence_it).match_input(in);
-    }
-}
-
 MatchObject Pregex::match_token(IN_T in){
     MatchObject out;
-    for (auto it = 0; it < m_sequences.size(); it++){
+    std::size_t matched_point = m_sequences.size();
+    for (std::size_t it = 0; it < m_sequences.size(); it++){
         auto out_obj = m_sequences.at(it).match_input(in);
-        if (out_obj.token_sequence.size()) out = out_obj;
-        // if (out_obj.matched) {
-        //     reset_queues(in, it);
-        //     break;
-        // }
+
+        if (out_obj.matched) matched_point = std::min(matched_point, it);
+
+        // if a character is matched just don't match any others??
+        if (out_obj.token_sequence.size())  out = out_obj;
+    }
+    for (std::size_t erase_it = matched_point+1; erase_it < m_sequences.size(); erase_it++){
+        m_sequences.at(erase_it).reset_ptrs();
     }
 
     return out;
