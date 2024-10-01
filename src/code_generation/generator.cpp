@@ -25,7 +25,10 @@ int main(int argc, char* argv[]) {
 
     for (auto c : (parsed_args["input string"]+" ")){
         auto match_obj = lexer.match_token(c);
-        std::cout << match_obj;
+        if (match_obj.token_sequence.size()){
+            for (auto item : match_obj.token_sequence) std::cout << item;
+            std::cout << " (" << match_obj.out_token << ") ";
+        }
     }
 
     return 0;

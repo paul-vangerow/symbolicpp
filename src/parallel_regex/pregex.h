@@ -60,13 +60,6 @@ struct MatchObject {
     bool matched = false;
 };
 
-static void operator<<(std::ostream & stream, MatchObject & rhs){
-    if (rhs.token_sequence.size()){
-        for (auto item : rhs.token_sequence) stream << item;
-        stream << " (" << rhs.out_token << ") ";
-    }
-}
-
 struct MatchPtr {
     std::size_t location = 0;
     std::vector<IN_T> tokens;
