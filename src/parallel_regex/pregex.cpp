@@ -7,7 +7,7 @@ PregexSequence::PregexSequence(
     : m_out_token(out_token)
 {
     // Construct all nodes
-    int node_number = 0;
+    std::size_t node_number = 0;
     for (auto item : internal_transitions){
         m_sequence.push_back( PregexNode(item, node_number++) );
     }
