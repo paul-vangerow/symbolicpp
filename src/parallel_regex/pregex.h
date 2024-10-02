@@ -37,20 +37,20 @@ public:
         }
     }
 
-    void operator+=(PregexNode & lhs){
-        for (auto item : lhs.m_transitions){
+    void node_pleq(std::unique_ptr<PregexNode> & lhs){
+        for (auto & item : lhs->m_transitions){
             auto it = m_transitions.find(item.first);
             if (it != m_transitions.end()) it->second.insert(item.second.begin(), item.second.end());
             else m_transitions.insert(item);
         }
     }
 
-    void operator|=(PregexNode & lhs){
-        m_is_end |= lhs.m_is_end;
+    void node_oreq(std::unique_ptr<PregexNode> & lhs){
+        m_is_end |= lhs->m_is_end;
     }
 
-    bool operator!=(PregexNode & lhs){
-        return (m_node_number != lhs.m_node_number);
+    bool node_neq(std::unique_ptr<PregexNode> & lhs){
+        return (m_node_number != lhs->m_node_number);
     }
 };
 
@@ -68,7 +68,7 @@ struct MatchPtr {
 
 class PregexSequence {
 private:
-    std::vector<PregexNode> m_sequence;
+    std::vector<std::unique_ptr<PregexNode>> m_sequence;
     OUT_T m_out_token;
     std::queue<MatchPtr> m_ptrs;
 public:
@@ -78,9 +78,9 @@ public:
         OUT_T out_token);
 
     void print_sequence() {
-        for (auto node : m_sequence){
-            std::cout << node.m_node_number << " : " << node.m_is_end << " | ";
-            for (auto transition : node.m_transitions){
+        for (auto & node : m_sequence){
+            std::cout << node->m_node_number << " : " << node->m_is_end << " | ";
+            for (auto transition : node->m_transitions){
                 std::cout << transition.first << "-(";
                 for (auto links : transition.second) std::cout << links << " ";
                 std::cout << ") ";
@@ -108,12 +108,11 @@ public:
 
 class Pregex {
 private:
-    std::vector<PregexSequence> m_sequences;
+    std::vector<std::unique_ptr<PregexSequence>> m_sequences;
 public:
     Pregex() = default;
 
     MatchObject match_token(IN_T in);
-    void reset_queues(IN_T in, std::size_t seq_idx);
 
     void add_char_sequence(std::string match_string, std::string out_token);
 };

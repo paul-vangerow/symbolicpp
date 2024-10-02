@@ -9,22 +9,20 @@ PregexSequence::PregexSequence(
     // Construct all nodes
     std::size_t node_number = 0;
     for (auto item : internal_transitions){
-        m_sequence.push_back( PregexNode(item, node_number++) );
+        m_sequence.push_back( std::make_unique<PregexNode>(item, node_number++) );
     }
     // Construct final node
-    m_sequence.push_back( PregexNode( std::unordered_set<IN_T>{}, node_number, true ) );
+    m_sequence.push_back( std::make_unique<PregexNode>( std::unordered_set<IN_T>{}, node_number, true ) );
 
     // Apply modifiers to nodes
     for (auto mod : modifiers){
         auto & end_node = m_sequence.at(mod.context_end);
         auto & begin_node = m_sequence.at(mod.context_start);
         if (mod.optional){
-            begin_node |= end_node;
-            if (end_node != m_sequence.back())  begin_node += end_node;
+            begin_node->node_oreq(end_node);
+            if (end_node != m_sequence.back()) begin_node->node_pleq(end_node);
         }
-        if (mod.recursive){
-            m_sequence.at(mod.context_end) += m_sequence.at(mod.context_start);
-        }
+        if (mod.recursive) end_node->node_pleq(begin_node);
     }
 }
 
@@ -107,9 +105,9 @@ std::pair<std::vector<PregexModifier>, std::vector<std::unordered_set<char>>> Pr
 
 void Pregex::add_char_sequence(std::string match_string, std::string out_token){
     auto v = PregexSequence::parse_input_text(match_string);
-    PregexSequence sequence(v.second, v.first, out_token);
-    sequence.print_sequence();
-    m_sequences.push_back(sequence);
+    auto sequence = std::make_unique<PregexSequence>(v.second, v.first, out_token);
+    sequence->print_sequence();
+    m_sequences.push_back(std::move(sequence));
 }
 
 // ---*---- Char only section over ---*--- //
@@ -124,8 +122,8 @@ MatchObject PregexSequence::match_input(IN_T token){
         auto front_element = m_ptrs.front();
         m_ptrs.pop();
 
-        auto front_node = m_sequence.at(front_element.location);
-        auto front_transitions = front_node.m_transitions;
+        auto & front_node = m_sequence.at(front_element.location);
+        auto & front_transitions = front_node->m_transitions;
         auto front_find_token = front_transitions.find(token);
 
         // bool is_end = front_node.m_is_end;
@@ -146,7 +144,7 @@ MatchObject PregexSequence::match_input(IN_T token){
 
         // We have found a match, go through all possible links:
         for (auto link : front_find_token->second){
-            auto link_node_end = m_sequence.at(link).m_is_end;
+            auto link_node_end = m_sequence.at(link)->m_is_end;
 
             // Make note if there is a match on the transition node.
             output.matched |= link_node_end;
@@ -169,7 +167,7 @@ MatchObject Pregex::match_token(IN_T in){
     MatchObject out;
     std::size_t matched_point = m_sequences.size();
     for (std::size_t it = 0; it < m_sequences.size(); it++){
-        auto out_obj = m_sequences.at(it).match_input(in);
+        auto out_obj = m_sequences.at(it)->match_input(in);
 
         if (out_obj.matched) matched_point = std::min(matched_point, it);
 
@@ -177,7 +175,7 @@ MatchObject Pregex::match_token(IN_T in){
         if (out_obj.token_sequence.size())  out = out_obj;
     }
     for (std::size_t erase_it = matched_point+1; erase_it < m_sequences.size(); erase_it++){
-        m_sequences.at(erase_it).reset_ptrs();
+        m_sequences.at(erase_it)->reset_ptrs();
     }
 
     return out;
