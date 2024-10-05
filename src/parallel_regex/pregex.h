@@ -8,9 +8,6 @@
 #include <stack>
 #include <queue>
 
-// typedef char IN_T;
-// typedef std::string OUT_T;
-
 struct PregexModifier {
     bool recursive = false;
     bool optional = false;
@@ -84,10 +81,10 @@ public:
         // Construct all nodes
         std::size_t node_number = 0;
         for (auto item : internal_transitions){
-            m_sequence.push_back( std::make_unique<PregexNode<IN_T, OUT_T>>(item, node_number++) ); // probably can replace with emplace back
+            m_sequence.emplace_back( new PregexNode<IN_T, OUT_T>(item, node_number++) ); // probably can replace with emplace back
         }
         // Construct final node
-        m_sequence.push_back( std::make_unique<PregexNode<IN_T, OUT_T>>( std::unordered_set<IN_T>{}, node_number, true ) );
+        m_sequence.emplace_back( new PregexNode<IN_T, OUT_T>( std::unordered_set<IN_T>{}, node_number, true ) );
 
         // Apply modifiers to nodes
         for (auto mod : modifiers){
@@ -142,7 +139,7 @@ public:
             }
         
             // Add the new token
-            front_element.tokens.push_back(token);
+            front_element.tokens.push_back(token); // maybe emplace if token has a copy constructor
 
             // We have found a match, go through all possible links:
             for (auto link : front_find_token->second){
@@ -200,7 +197,7 @@ public:
                     for (int i = 0; i < set_accumulator.size(); i+=3){
                         build_character_set(set_accumulator.at(i), set_accumulator.at(i+2), items);
                     }
-                    characters.push_back(items);
+                    characters.emplace_back(std::move(items));
                     set_accumulator = "";
                     begin = end;
                     end++;
@@ -220,7 +217,7 @@ public:
                 case '?':
                 case '*': {
                     if (!escape && !build_set) {
-                        modifiers.push_back( 
+                        modifiers.emplace_back( 
                         PregexModifier{
                             .context_start=begin, 
                             .context_end=end, 
@@ -236,7 +233,7 @@ public:
                         set_accumulator+=c;
                         continue;
                     }
-                    characters.push_back( std::unordered_set<char>{c} );
+                    characters.emplace_back( std::unordered_set<char>{c} );
 
                     begin = end;
                     end++;
