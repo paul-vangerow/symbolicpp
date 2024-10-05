@@ -8,8 +8,8 @@
 #include <stack>
 #include <queue>
 
-typedef char IN_T;
-typedef std::string OUT_T;
+// typedef char IN_T;
+// typedef std::string OUT_T;
 
 struct PregexModifier {
     bool recursive = false;
@@ -18,6 +18,7 @@ struct PregexModifier {
     std::size_t context_end;
 };
 
+template <class IN_T, class OUT_T>
 class PregexNode {
 public:
     bool m_is_end;
@@ -54,21 +55,23 @@ public:
     }
 };
 
+template <class IN_T, class OUT_T>
 struct MatchObject {
     std::vector<IN_T> token_sequence;
     OUT_T out_token = "";
     bool matched = false;
 };
 
-struct MatchPtr {
-    std::size_t location = 0;
-    std::vector<IN_T> tokens;
-    std::vector<IN_T> full_match_tokens;
-};
-
+template <class IN_T, class OUT_T>
 class PregexSequence {
 private:
-    std::vector<std::unique_ptr<PregexNode>> m_sequence;
+    struct MatchPtr {
+        std::size_t location = 0;
+        std::vector<IN_T> tokens;
+        std::vector<IN_T> full_match_tokens;
+    };
+
+    std::vector<std::unique_ptr<PregexNode<IN_T, OUT_T>>> m_sequence;
     OUT_T m_out_token;
     std::queue<MatchPtr> m_ptrs;
 public:
@@ -81,10 +84,10 @@ public:
         // Construct all nodes
         std::size_t node_number = 0;
         for (auto item : internal_transitions){
-            m_sequence.push_back( std::make_unique<PregexNode>(item, node_number++) ); // probably can replace with emplace back
+            m_sequence.push_back( std::make_unique<PregexNode<IN_T, OUT_T>>(item, node_number++) ); // probably can replace with emplace back
         }
         // Construct final node
-        m_sequence.push_back( std::make_unique<PregexNode>( std::unordered_set<IN_T>{}, node_number, true ) );
+        m_sequence.push_back( std::make_unique<PregexNode<IN_T, OUT_T>>( std::unordered_set<IN_T>{}, node_number, true ) );
 
         // Apply modifiers to nodes
         for (auto mod : modifiers){
@@ -111,8 +114,8 @@ public:
         std::cout << "\n";
     }
 
-    MatchObject match_input(IN_T token){
-        MatchObject output;
+    MatchObject<IN_T, OUT_T> match_input(IN_T token){
+        MatchObject<IN_T, OUT_T> output;
         std::queue<MatchPtr> new_ptrs;
 
         if (!m_ptrs.size()) init_ptrs();
@@ -247,14 +250,15 @@ public:
     }
 };
 
+template <class IN_T, class OUT_T>
 class Pregex {
 private:
-    std::vector<std::unique_ptr<PregexSequence>> m_sequences;
+    std::vector<std::unique_ptr<PregexSequence<IN_T, OUT_T>>> m_sequences;
 public:
     Pregex() = default;
 
-    MatchObject match_token(IN_T in){
-        MatchObject out;
+    MatchObject<IN_T, OUT_T> match_token(IN_T in){
+        MatchObject<IN_T, OUT_T> out;
         std::size_t matched_point = m_sequences.size();
         for (std::size_t it = 0; it < m_sequences.size(); it++){
             auto out_obj = m_sequences.at(it)->match_input(in);
@@ -272,8 +276,8 @@ public:
     }
 
     void add_char_sequence(std::string match_string, std::string out_token){
-        auto v = PregexSequence::parse_input_text(match_string);
-        auto sequence = std::make_unique<PregexSequence>(v.second, v.first, out_token);
+        auto v = PregexSequence<IN_T, OUT_T>::parse_input_text(match_string);
+        auto sequence = std::make_unique<PregexSequence<IN_T, OUT_T>>(v.second, v.first, out_token);
         sequence->print_sequence();
         m_sequences.push_back(std::move(sequence));
     }

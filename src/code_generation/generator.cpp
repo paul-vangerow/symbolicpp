@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << parsed_args["input string"] << "\n";
 
-    Pregex lexer;
+    Pregex<char, std::string> lexer;
     lexer.add_char_sequence("[0-9]+(.[0-9]+)?", "NUM");
     lexer.add_char_sequence("MOD", "MOD");
     lexer.add_char_sequence("\\+", "ADD");
